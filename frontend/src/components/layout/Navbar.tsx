@@ -5,7 +5,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, ScanText, Sparkles, TrendingUp,
-  FileSpreadsheet, Target, Calendar, FileText, LogOut, Menu, X
+  FileSpreadsheet, Target, Calendar, FileText,
+  CreditCard, Landmark, Tags, Settings, LogOut, Menu, X
 } from "lucide-react";
 import { useState } from "react";
 
@@ -16,13 +17,17 @@ export function Navbar() {
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "OCR & Leitor", href: "/ocr", icon: ScanText },
-    { name: "IA Financeira", href: "/ai-assistant", icon: Sparkles },
-    { name: "Investimentos", href: "/investments", icon: TrendingUp },
+    { name: "Cartões", href: "/cards", icon: CreditCard },
+    { name: "Contas", href: "/accounts", icon: Landmark },
+    { name: "Categorias", href: "/categories", icon: Tags },
+    { name: "OCR", href: "/ocr", icon: ScanText },
+    { name: "IA Assistant", href: "/ai-assistant", icon: Sparkles },
+    { name: "Investir", href: "/investments", icon: TrendingUp },
     { name: "Importar", href: "/import", icon: FileSpreadsheet },
     { name: "Metas", href: "/budgets-goals", icon: Target },
     { name: "Agenda", href: "/calendar", icon: Calendar },
     { name: "Relatórios", href: "/reports", icon: FileText },
+    { name: "Ajustes", href: "/settings", icon: Settings },
   ];
 
   const handleLogout = () => {
