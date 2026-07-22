@@ -98,4 +98,4 @@ async def admin_audit_log(
             "created_at": log.created_at.isoformat(),
         }
         for log in result.scalars().all()
-    }
+    ]
