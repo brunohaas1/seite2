@@ -37,14 +37,20 @@ export default function BudgetsGoalsPage() {
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [budgets, setBudgets] = useState<Budget[]>(initialBudgets);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<"goal" | "budget">("goal");
 
-  // Form State
+  // Goal Form State
   const [title, setTitle] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [currentAmount, setCurrentAmount] = useState("");
   const [category, setCategory] = useState("Reserva");
   const [deadline, setDeadline] = useState("");
-  const [toastSuccess, setToastSuccess] = useState(false);
+
+  // Budget Form State
+  const [budCat, setBudCat] = useState("");
+  const [budLimit, setBudLimit] = useState("");
+
+  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +70,27 @@ export default function BudgetsGoalsPage() {
     setTitle("");
     setTargetAmount("");
     setCurrentAmount("");
-    setToastSuccess(true);
-    setTimeout(() => setToastSuccess(false), 3000);
+    setToastSuccess("Nova Meta cadastrada com sucesso!");
+    setTimeout(() => setToastSuccess(null), 3000);
+  };
+
+  const handleAddBudget = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!budCat || !budLimit) return;
+
+    const newBudget: Budget = {
+      id: Date.now().toString(),
+      category: budCat,
+      limit: parseFloat(budLimit),
+      spent: 0,
+    };
+
+    setBudgets([newBudget, ...budgets]);
+    setIsModalOpen(false);
+    setBudCat("");
+    setBudLimit("");
+    setToastSuccess("Novo Teto de Orçamento cadastrado!");
+    setTimeout(() => setToastSuccess(null), 3000);
   };
 
   const formatCurrency = (val: number) =>
@@ -82,7 +107,7 @@ export default function BudgetsGoalsPage() {
             className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-sm"
           >
             <CheckCircle2 className="h-5 w-5" />
-            Nova Meta cadastrada com sucesso!
+            {toastSuccess}
           </motion.div>
         )}
       </AnimatePresence>
@@ -94,16 +119,31 @@ export default function BudgetsGoalsPage() {
             Metas & Orçamentos Mensais
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Planeje seus objetivos financeiros e acompanhe o teto de gastos por categoria.
+            Planeje seus objetivos financeiros e defina tetos de gastos por categoria.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Meta / Orçamento
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setModalTab("budget");
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold rounded-xl transition-all cursor-pointer"
+          >
+            <PiggyBank className="h-4 w-4 text-purple-400" />
+            Novo Teto de Orçamento
+          </button>
+          <button
+            onClick={() => {
+              setModalTab("goal");
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Meta
+          </button>
+        </div>
       </div>
 
       {/* Section 1: Financial Goals */}
@@ -162,10 +202,21 @@ export default function BudgetsGoalsPage() {
 
       {/* Section 2: Monthly Budgets */}
       <div className="space-y-4 pt-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <PiggyBank className="h-5 w-5 text-purple-400" />
-          Teto de Orçamento por Categoria
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <PiggyBank className="h-5 w-5 text-purple-400" />
+            Teto de Orçamento por Categoria
+          </h2>
+          <button
+            onClick={() => {
+              setModalTab("budget");
+              setIsModalOpen(true);
+            }}
+            className="text-xs font-bold text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Adicionar Teto
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {budgets.map((b) => {
@@ -202,7 +253,7 @@ export default function BudgetsGoalsPage() {
         </div>
       </div>
 
-      {/* Modal Nova Meta */}
+      {/* Unified Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -212,109 +263,142 @@ export default function BudgetsGoalsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-gray-900 border border-gray-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative text-white"
             >
-              <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
-                <h3 className="text-lg font-bold">Criar Nova Meta Financeira</h3>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
-                >
+              <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setModalTab("goal")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      modalTab === "goal" ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400"
+                    }`}
+                  >
+                    🎯 Nova Meta
+                  </button>
+                  <button
+                    onClick={() => setModalTab("budget")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      modalTab === "budget" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-400"
+                    }`}
+                  >
+                    🐷 Novo Teto de Orçamento
+                  </button>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleAddGoal} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                    Título da Meta
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Viagem Europa, Reserva de Emergência"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
+              {modalTab === "goal" ? (
+                <form onSubmit={handleAddGoal} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                      Valor Alvo (R$)
-                    </label>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Título da Meta</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Viagem Europa, Reserva de Emergência"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Valor Alvo (R$)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        placeholder="20000.00"
+                        value={targetAmount}
+                        onChange={(e) => setTargetAmount(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Já Guardado (R$)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={currentAmount}
+                        onChange={(e) => setCurrentAmount(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Categoria</label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="Reserva">Reserva</option>
+                        <option value="Viagem">Viagem</option>
+                        <option value="Veículos">Veículos</option>
+                        <option value="Imóveis">Imóveis</option>
+                        <option value="Educação">Educação</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Data Limite</label>
+                      <input
+                        type="date"
+                        value={deadline}
+                        onChange={(e) => setDeadline(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex gap-3">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-gray-800 text-gray-300 font-semibold rounded-xl text-sm">
+                      Cancelar
+                    </button>
+                    <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-500/20">
+                      Salvar Meta
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleAddBudget} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Categoria de Despesa</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Alimentação & Mercado, Saúde, Lazer"
+                      value={budCat}
+                      onChange={(e) => setBudCat(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Teto Máximo Mensal (R$)</label>
                     <input
                       type="number"
                       step="0.01"
                       required
-                      placeholder="Ex: 20000.00"
-                      value={targetAmount}
-                      onChange={(e) => setTargetAmount(e.target.value)}
+                      placeholder="Ex: 2500.00"
+                      value={budLimit}
+                      onChange={(e) => setBudLimit(e.target.value)}
                       className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                      Já Guardado (R$)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={currentAmount}
-                      onChange={(e) => setCurrentAmount(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+                  <div className="pt-4 flex gap-3">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-gray-800 text-gray-300 font-semibold rounded-xl text-sm">
+                      Cancelar
+                    </button>
+                    <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-purple-500/20">
+                      Salvar Teto de Orçamento
+                    </button>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                      Categoria
-                    </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="Reserva">Reserva</option>
-                      <option value="Viagem">Viagem</option>
-                      <option value="Veículos">Veículos</option>
-                      <option value="Imóveis">Imóveis</option>
-                      <option value="Educação">Educação</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                      Data Limite
-                    </label>
-                    <input
-                      type="date"
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20"
-                  >
-                    Salvar Meta
-                  </button>
-                </div>
-              </form>
+                </form>
+              )}
             </motion.div>
           </div>
         )}
