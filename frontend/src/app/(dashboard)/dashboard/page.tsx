@@ -228,6 +228,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto text-xs font-medium bg-gray-950/60 p-1.5 rounded-xl border border-gray-800">
+            <a href="/dashboard" className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold shadow-sm">Dashboard</a>
+            <a href="/ocr" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">OCR & Leitor</a>
+            <a href="/ai-assistant" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">IA Financeira</a>
+            <a href="/investments" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">Investimentos</a>
+            <a href="/import" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">Importar</a>
+          </div>
+
           <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.03 }}
