@@ -17,11 +17,10 @@ Este guia fornece o passo a passo para implantar a aplicação **Seite2** no ser
    ssh root@<IP_DO_ZIMAOS>
    ```
 
-2. **Clonar ou copiar o repositório na pasta AppData:**
+2. **Clonar ou acessar o repositório na pasta AppData:**
    ```bash
-   cd /DATA/AppData
-   git clone <URL_DO_SEU_REPOSITORIO_GIT> seite2
-   cd seite2
+   cd /DATA/AppData/seite2
+   git pull origin master
    ```
 
 3. **Criar o arquivo de ambiente (.env):**
@@ -29,15 +28,33 @@ Este guia fornece o passo a passo para implantar a aplicação **Seite2** no ser
    cp .env.example .env
    ```
 
-4. **Compilar e Iniciar a Aplicação:**
+4. **Definir DOCKER_CONFIG (Necessário porque a raiz `/root` do ZimaOS é read-only):**
    ```bash
-   docker compose up -d --build
+   export DOCKER_CONFIG=/tmp/.docker
+   mkdir -p /tmp/.docker
    ```
 
-5. **Acessar o Sistema:**
+5. **Compilar e Iniciar a Aplicação:**
+   ```bash
+   DOCKER_CONFIG=/tmp/.docker docker-compose up -d --build
+   ```
+   *(Ou se o seu sistema usar o plugin v2: `DOCKER_CONFIG=/tmp/.docker docker compose up -d --build`)*
+
+6. **Acessar o Sistema:**
    - **Interface Principal (Frontend):** `http://<IP_DO_ZIMAOS>:8080`
    - **Documentação da API (FastAPI Swagger):** `http://<IP_DO_ZIMAOS>:8080/docs`
    - **Gerenciador MinIO (Arquivos):** `http://<IP_DO_ZIMAOS>:9001` (Usuário: `minioadmin` | Senha: `minioadmin`)
+
+---
+
+## 🛠️ Solução de Erros Específicos do ZimaOS
+
+- **`mkdir /root/.docker: read-only file system`**:
+  O ZimaOS possui o sistema de arquivos da raiz como somente leitura (`read-only`). Defina a variável de ambiente executando:
+  ```bash
+  export DOCKER_CONFIG=/tmp/.docker
+  ```
+
 
 ---
 
