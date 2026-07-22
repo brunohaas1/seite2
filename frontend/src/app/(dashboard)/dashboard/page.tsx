@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp, TrendingDown, DollarSign, Wallet,
   ArrowUpRight, ArrowDownRight, Plus, LogOut,
-  Sparkles, RefreshCw, X, CheckCircle
+  Sparkles, RefreshCw, X, CheckCircle, CreditCard,
+  Target, Calendar, Clock, ChevronRight, Landmark
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
@@ -33,25 +34,25 @@ interface DashboardData {
 }
 
 const defaultDemoData: DashboardData = {
-  balance: 14850.50,
-  period_income: 18500.00,
-  period_expense: 3649.50,
-  period_net: 14850.50,
-  account_count: 3,
+  balance: 42850.50,
+  period_income: 14500.00,
+  period_expense: 6240.80,
+  period_net: 8259.20,
+  account_count: 4,
   recent_transactions: [
-    { id: "1", description: "Venda de Serviços SaaS", amount: 4500.00, type: "income", date: new Date().toISOString() },
-    { id: "2", description: "Pagamento Servidor ZimaOS / Cloud", amount: 150.00, type: "expense", date: new Date().toISOString() },
-    { id: "3", description: "Licença de Software", amount: 299.90, type: "expense", date: new Date().toISOString() },
-    { id: "4", description: "Projeto Freelance", amount: 8000.00, type: "income", date: new Date().toISOString() },
-    { id: "5", description: "Assinatura Internet", amount: 200.00, type: "expense", date: new Date().toISOString() },
+    { id: "1", description: "Supermercado Carrefour", amount: 480.50, type: "expense", date: new Date().toISOString() },
+    { id: "2", description: "Recebimento Projeto Client SaaS", amount: 7500.00, type: "income", date: new Date().toISOString() },
+    { id: "3", description: "Fatura Nubank Roxinho", amount: 2450.80, type: "expense", date: new Date().toISOString() },
+    { id: "4", description: "Reabastecimento Posto Shell", amount: 220.00, type: "expense", date: new Date().toISOString() },
+    { id: "5", description: "Proventos Dividendos HGLG11", amount: 412.50, type: "income", date: new Date().toISOString() },
   ],
   monthly_data: [
-    { month: 1, income: 12000, expense: 3000 },
-    { month: 2, income: 15000, expense: 4000 },
-    { month: 3, income: 14000, expense: 3500 },
-    { month: 4, income: 16000, expense: 3800 },
-    { month: 5, income: 17500, expense: 4200 },
-    { month: 6, income: 18500, expense: 3649.5 },
+    { month: 1, income: 12000, expense: 5500 },
+    { month: 2, income: 13500, expense: 5800 },
+    { month: 3, income: 11000, expense: 6100 },
+    { month: 4, income: 14000, expense: 5900 },
+    { month: 5, income: 15200, expense: 6300 },
+    { month: 6, income: 14500, expense: 6240 },
   ],
 };
 
@@ -71,11 +72,10 @@ export default function DashboardPage() {
   const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
-    fetchDashboard();
+    fetchDashboardData();
   }, []);
 
-  const fetchDashboard = async () => {
-    setLoading(true);
+  const fetchDashboardData = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setIsDemo(true);
@@ -171,12 +171,6 @@ export default function DashboardPage() {
     setTimeout(() => setSuccessToast(false), 3000);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/login");
-  };
-
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -185,10 +179,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <RefreshCw className="h-8 w-8 text-indigo-500 animate-spin" />
-          <span className="text-gray-400 text-sm font-medium">Carregando Seite2...</span>
+          <span className="text-gray-400 text-sm font-medium">Carregando Seite2 Dashboard...</span>
         </div>
       </div>
     );
@@ -220,10 +214,10 @@ export default function DashboardPage() {
         >
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white">
-              Visão Geral Financeira
+              Visão Geral Financeira 360°
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              {isDemo ? "Visualizando em Modo Demonstração" : "Conectado ao Servidor ZimaOS em tempo real"}
+              {isDemo ? "Visualizando em Modo Demonstração Interativo" : "Conectado ao Servidor ZimaOS em tempo real"}
             </p>
           </div>
 
@@ -231,36 +225,40 @@ export default function DashboardPage() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Nova Transação</span>
           </motion.button>
         </motion.div>
 
-
-        {/* Demo Banner */}
-        {isDemo && (
-          <div className="bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-pink-900/40 border border-indigo-500/30 rounded-2xl p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-amber-300 shrink-0" />
-              <p className="text-xs md:text-sm text-gray-300">
-                Você está visualizando dados interativos de demonstração. Adicione novas transações abaixo para testar em tempo real!
-              </p>
+        {/* AI Insight Card */}
+        <div className="bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-pink-900/40 border border-indigo-500/30 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-400/10 text-amber-300 rounded-xl">
+              <Sparkles className="h-5 w-5" />
             </div>
+            <p className="text-xs md:text-sm text-gray-300">
+              <strong className="text-white">Insight da IA Seite2:</strong> Seus gastos com Alimentação estão <span className="text-emerald-400 font-bold">12% abaixo do teto</span>. Você pode aportar R$ 350,00 adicionais na sua Meta de Reserva!
+            </p>
           </div>
-        )}
+          <button
+            onClick={() => router.push("/ai-assistant")}
+            className="hidden sm:flex items-center gap-1 text-xs text-indigo-300 hover:text-white font-bold whitespace-nowrap"
+          >
+            Falar com IA <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
 
-        {/* Metrics Grid */}
+        {/* Primary KPI Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
             className="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-400">Saldo Total</span>
+              <span className="text-xs font-medium text-gray-400">Saldo Total Consolidado</span>
               <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                 <DollarSign className="h-4 w-4" />
               </div>
@@ -270,7 +268,28 @@ export default function DashboardPage() {
             </p>
             <div className="flex items-center gap-1 mt-2 text-xs text-emerald-400">
               <ArrowUpRight className="h-3 w-3" />
-              <span>Atualizado em tempo real</span>
+              <span>Soma de 4 contas conectadas</span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-400">Receitas do Mês</span>
+              <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+            </div>
+            <p className="text-2xl font-black text-emerald-400">
+              {formatCurrency(data?.period_income || 0)}
+            </p>
+            <div className="flex items-center gap-1 mt-2 text-xs text-emerald-400">
+              <ArrowUpRight className="h-3 w-3" />
+              <span>Entradas este mês</span>
             </div>
           </motion.div>
 
@@ -281,28 +300,7 @@ export default function DashboardPage() {
             className="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-400">Receitas</span>
-              <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-emerald-400">
-              {formatCurrency(data?.period_income || 0)}
-            </p>
-            <div className="flex items-center gap-1 mt-2 text-xs text-emerald-400">
-              <ArrowUpRight className="h-3 w-3" />
-              <span>Este mês</span>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-400">Despesas</span>
+              <span className="text-xs font-medium text-gray-400">Despesas do Mês</span>
               <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400">
                 <TrendingDown className="h-4 w-4" />
               </div>
@@ -312,14 +310,14 @@ export default function DashboardPage() {
             </p>
             <div className="flex items-center gap-1 mt-2 text-xs text-rose-400">
               <ArrowDownRight className="h-3 w-3" />
-              <span>Este mês</span>
+              <span>Saídas este mês</span>
             </div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
             className="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all"
           >
             <div className="flex items-center justify-between mb-3">
@@ -332,9 +330,72 @@ export default function DashboardPage() {
               {formatCurrency(data?.period_net || 0)}
             </p>
             <div className="flex items-center gap-1 mt-2 text-xs text-purple-400">
-              <span>Balanço mensal</span>
+              <span>Economia acumulada</span>
             </div>
           </motion.div>
+        </div>
+
+        {/* Executive Quick Summaries Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Cartões summary */}
+          <div
+            onClick={() => router.push("/cards")}
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4 text-purple-400" /> Cartões de Crédito
+              </span>
+              <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-white" />
+            </div>
+            <p className="text-xl font-extrabold text-white">R$ 10.471,30</p>
+            <span className="text-[11px] text-gray-400 block">Faturas em aberto • Vence dia 10</span>
+          </div>
+
+          {/* Investimentos summary */}
+          <div
+            onClick={() => router.push("/investments")}
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                <TrendingUp className="h-4 w-4 text-emerald-400" /> Investimentos
+              </span>
+              <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-white" />
+            </div>
+            <p className="text-xl font-extrabold text-emerald-400">R$ 55.430,00</p>
+            <span className="text-[11px] text-gray-400 block">Rendimento: +18.4% a.a.</span>
+          </div>
+
+          {/* Metas summary */}
+          <div
+            onClick={() => router.push("/budgets-goals")}
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-indigo-400" /> Metas Principais
+              </span>
+              <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-white" />
+            </div>
+            <p className="text-xl font-extrabold text-indigo-300">71% Concluído</p>
+            <span className="text-[11px] text-gray-400 block">Reserva de Emergência</span>
+          </div>
+
+          {/* Agenda / Vencimentos summary */}
+          <div
+            onClick={() => router.push("/calendar")}
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-amber-400" /> Próximas Contas
+              </span>
+              <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-white" />
+            </div>
+            <p className="text-xl font-extrabold text-amber-300">3 Vencimentos</p>
+            <span className="text-[11px] text-gray-400 block">Nos próximos 7 dias</span>
+          </div>
         </div>
 
         {/* Charts & Recent Transactions */}
@@ -347,17 +408,7 @@ export default function DashboardPage() {
             className="lg:col-span-2 bg-gray-900/80 border border-gray-800 rounded-2xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-white">Fluxo Financeiro Mensal</h2>
-              <div className="flex items-center gap-4 text-xs font-medium">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-3 w-3 rounded bg-emerald-500" />
-                  <span className="text-gray-400">Receitas</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-3 w-3 rounded bg-rose-500" />
-                  <span className="text-gray-400">Despesas</span>
-                </div>
-              </div>
+              <h2 className="text-lg font-bold text-white">Fluxo Financeiro Mensal (Receitas vs Despesas)</h2>
             </div>
 
             <div className="h-64 pt-2">
