@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Tags, Plus, Sparkles, FolderTree, Settings2, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tags, Plus, Sparkles, FolderTree, ArrowRight, CheckCircle2, X } from "lucide-react";
 
 interface Category {
   id: string;
@@ -34,9 +34,50 @@ const defaultRules: AutoRule[] = [
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [rules, setRules] = useState<AutoRule[]>(defaultRules);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // New Category state
+  const [name, setName] = useState("");
+  const [catType, setCatType] = useState<"Despesa" | "Receita">("Despesa");
+  const [subcats, setSubcats] = useState("");
+  const [toastSuccess, setToastSuccess] = useState(false);
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+
+    const newCat: Category = {
+      id: Date.now().toString(),
+      name,
+      color: catType === "Despesa" ? "bg-rose-500" : "bg-emerald-500",
+      type: catType,
+      subcategories: subcats ? subcats.split(",").map((s) => s.trim()) : ["Geral"],
+    };
+
+    setCategories([newCat, ...categories]);
+    setIsModalOpen(false);
+    setName("");
+    setSubcats("");
+    setToastSuccess(true);
+    setTimeout(() => setToastSuccess(false), 3000);
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <AnimatePresence>
+        {toastSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-sm"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            Nova Categoria salva com sucesso!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -45,10 +86,13 @@ export default function CategoriesPage() {
             Categorias & Regras Automáticas por IA
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Organize suas finanças com categorias ilimitadas e crie regras automáticas de categorização.
+            Organize suas finanças com categorias ilimitadas e crie regras automáticas.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
+        >
           <Plus className="h-4 w-4" />
           Nova Categoria
         </button>
@@ -98,7 +142,7 @@ export default function CategoriesPage() {
             Regras Automáticas da IA
           </h2>
           <p className="text-xs text-gray-400">
-            A IA classifica automaticamente suas compras no extrato ou no OCR com base em palavras-chave.
+            A IA classifica automaticamente suas compras com base em palavras-chave.
           </p>
 
           <div className="space-y-3">
@@ -112,6 +156,73 @@ export default function CategoriesPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Nova Categoria */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-900 border border-gray-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative text-white"
+            >
+              <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                <h3 className="text-lg font-bold">Criar Nova Categoria</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddCategory} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Nome da Categoria</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Educação & Cursos, Lazer & Hobbies"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Tipo</label>
+                  <select
+                    value={catType}
+                    onChange={(e: any) => setCatType(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="Despesa">Despesa</option>
+                    <option value="Receita">Receita</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Subcategorias (separadas por vírgula)</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Cursos Online, Livros, Mentorias"
+                    value={subcats}
+                    onChange={(e) => setSubcats(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm">
+                    Cancelar
+                  </button>
+                  <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-500/20">
+                    Salvar Categoria
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

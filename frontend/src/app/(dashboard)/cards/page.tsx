@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { CreditCard, Calendar, Plus, AlertCircle, CheckCircle2, ChevronRight, DollarSign } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CreditCard, Plus, CheckCircle2, X } from "lucide-react";
 
 interface CardItem {
   id: string;
@@ -25,12 +25,63 @@ const defaultCards: CardItem[] = [
 
 export default function CardsPage() {
   const [cards, setCards] = useState<CardItem[]>(defaultCards);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Form states
+  const [name, setName] = useState("");
+  const [bank, setBank] = useState("");
+  const [brand, setBrand] = useState("Mastercard");
+  const [limitTotal, setLimitTotal] = useState("");
+  const [closingDay, setClosingDay] = useState("5");
+  const [dueDay, setDueDay] = useState("12");
+  const [digits, setDigits] = useState("1234");
+  const [toastSuccess, setToastSuccess] = useState(false);
+
+  const handleAddCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !limitTotal) return;
+
+    const newCard: CardItem = {
+      id: Date.now().toString(),
+      name,
+      bank: bank || "Banco Emissor",
+      brand,
+      limitTotal: parseFloat(limitTotal),
+      limitUsed: 0,
+      closingDay: parseInt(closingDay),
+      dueDay: parseInt(dueDay),
+      digits: digits || "9999",
+      color: "from-indigo-900 to-slate-900",
+    };
+
+    setCards([newCard, ...cards]);
+    setIsModalOpen(false);
+    setName("");
+    setBank("");
+    setLimitTotal("");
+    setToastSuccess(true);
+    setTimeout(() => setToastSuccess(false), 3000);
+  };
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <AnimatePresence>
+        {toastSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-sm"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            Novo Cartão cadastrado com sucesso!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -39,10 +90,13 @@ export default function CardsPage() {
             Gestão de Cartões de Crédito & Faturas
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Controle limites disponíveis, datas de fechamento, vencimento de faturas e compras parceladas.
+            Controle limites disponíveis, datas de fechamento e vencimento de faturas.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
+        >
           <Plus className="h-4 w-4" />
           Novo Cartão
         </button>
@@ -98,6 +152,135 @@ export default function CardsPage() {
           );
         })}
       </div>
+
+      {/* Modal Novo Cartão */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-900 border border-gray-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative text-white"
+            >
+              <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                <h3 className="text-lg font-bold">Cadastrar Novo Cartão de Crédito</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddCard} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                    Nome do Cartão
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Nubank Violeta, C6 Carbon"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Instituição / Banco
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Nubank, Bradesco"
+                      value={bank}
+                      onChange={(e) => setBank(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Bandeira
+                    </label>
+                    <select
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Mastercard">Mastercard</option>
+                      <option value="Visa">Visa</option>
+                      <option value="Elo">Elo</option>
+                      <option value="Amex">American Express</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Limite Total (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="10000.00"
+                      value={limitTotal}
+                      onChange={(e) => setLimitTotal(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Dia Fechamento
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={closingDay}
+                      onChange={(e) => setClosingDay(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Dia Vencimento
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={dueDay}
+                      onChange={(e) => setDueDay(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20"
+                  >
+                    Salvar Cartão
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

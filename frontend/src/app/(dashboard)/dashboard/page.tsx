@@ -65,7 +65,8 @@ export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [txDesc, setTxDesc] = useState("");
   const [txAmount, setTxAmount] = useState("");
-  const [txType, setTxType] = useState<"income" | "expense">("income");
+  const [txType, setTxType] = useState<"income" | "expense">("expense");
+  const [txDate, setTxDate] = useState(new Date().toISOString().split("T")[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
 
@@ -122,7 +123,7 @@ export default function DashboardPage() {
       description: txDesc,
       amount: amountVal,
       type: txType,
-      date: new Date().toISOString(),
+      date: txDate || new Date().toISOString(),
     };
 
     if (token) {
@@ -137,7 +138,7 @@ export default function DashboardPage() {
             description: txDesc,
             amount: amountVal,
             type: txType,
-            date: new Date().toISOString(),
+            date: txDate || new Date().toISOString(),
           }),
         });
       } catch (err) {
@@ -505,19 +506,33 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                    Valor (R$)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    placeholder="0.00"
-                    value={txAmount}
-                    onChange={(e) => setTxAmount(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Valor (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="0.00"
+                      value={txAmount}
+                      onChange={(e) => setTxAmount(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Data da Transação
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={txDate}
+                      onChange={(e) => setTxDate(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-4 flex gap-3">
