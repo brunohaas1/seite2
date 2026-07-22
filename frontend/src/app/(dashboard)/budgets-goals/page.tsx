@@ -366,14 +366,23 @@ export default function BudgetsGoalsPage() {
                 <form onSubmit={handleAddBudget} className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Categoria de Despesa</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Alimentação & Mercado, Saúde, Lazer"
+                    <select
                       value={budCat}
                       onChange={(e) => setBudCat(e.target.value)}
                       className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+                    >
+                      <option value="">Selecione uma Categoria...</option>
+                      <option value="Alimentação & Mercado">Alimentação & Mercado</option>
+                      <option value="Lazer & Restaurantes">Lazer & Restaurantes</option>
+                      <option value="Transporte & Combustível">Transporte & Combustível</option>
+                      <option value="Moradia & Contas">Moradia & Contas</option>
+                      <option value="Saúde & Cuidados">Saúde & Cuidados</option>
+                      <option value="Educação & Cursos">Educação & Cursos</option>
+                      <option value="Assinaturas & SaaS">Assinaturas & SaaS</option>
+                      <option value="Viagem & Férias">Viagem & Férias</option>
+                      <option value="Veículos">Veículos</option>
+                      <option value="Outros">Outros</option>
+                    </select>
                   </div>
 
                   <div>

@@ -34,13 +34,20 @@ const defaultRules: AutoRule[] = [
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [rules, setRules] = useState<AutoRule[]>(defaultRules);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
 
   // New Category state
   const [name, setName] = useState("");
   const [catType, setCatType] = useState<"Despesa" | "Receita">("Despesa");
   const [subcats, setSubcats] = useState("");
-  const [toastSuccess, setToastSuccess] = useState(false);
+
+  // New Rule state
+  const [keyword, setKeyword] = useState("");
+  const [targetCategory, setTargetCategory] = useState(defaultCategories[0]?.name || "");
+
+  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,11 +62,28 @@ export default function CategoriesPage() {
     };
 
     setCategories([newCat, ...categories]);
-    setIsModalOpen(false);
+    setIsCatModalOpen(false);
     setName("");
     setSubcats("");
-    setToastSuccess(true);
-    setTimeout(() => setToastSuccess(false), 3000);
+    setToastSuccess("Nova Categoria salva com sucesso!");
+    setTimeout(() => setToastSuccess(null), 3000);
+  };
+
+  const handleAddRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyword || !targetCategory) return;
+
+    const newRule: AutoRule = {
+      id: Date.now().toString(),
+      keyword,
+      targetCategory,
+    };
+
+    setRules([newRule, ...rules]);
+    setIsRuleModalOpen(false);
+    setKeyword("");
+    setToastSuccess("Nova Regra Automática criada!");
+    setTimeout(() => setToastSuccess(null), 3000);
   };
 
   return (
@@ -73,7 +97,7 @@ export default function CategoriesPage() {
             className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-sm"
           >
             <CheckCircle2 className="h-5 w-5" />
-            Nova Categoria salva com sucesso!
+            {toastSuccess}
           </motion.div>
         )}
       </AnimatePresence>
@@ -86,16 +110,25 @@ export default function CategoriesPage() {
             Categorias & Regras Automáticas por IA
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Organize suas finanças com categorias ilimitadas e crie regras automáticas.
+            Organize suas finanças selecionando categorias existentes ou criando novas categorias personalizadas.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Categoria
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsRuleModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold rounded-xl transition-all cursor-pointer"
+          >
+            <Sparkles className="h-4 w-4 text-amber-300" />
+            Nova Regra IA
+          </button>
+          <button
+            onClick={() => setIsCatModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Categoria
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -137,12 +170,20 @@ export default function CategoriesPage() {
 
         {/* AI Auto Rules */}
         <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-300" />
-            Regras Automáticas da IA
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-300" />
+              Regras Automáticas
+            </h2>
+            <button
+              onClick={() => setIsRuleModalOpen(true)}
+              className="text-xs font-bold text-indigo-300 hover:text-white flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Criar Regra
+            </button>
+          </div>
           <p className="text-xs text-gray-400">
-            A IA classifica automaticamente suas compras com base em palavras-chave.
+            A IA associa automaticamente transações com base nas suas categorias cadastradas.
           </p>
 
           <div className="space-y-3">
@@ -159,7 +200,7 @@ export default function CategoriesPage() {
 
       {/* Modal Nova Categoria */}
       <AnimatePresence>
-        {isModalOpen && (
+        {isCatModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -169,7 +210,7 @@ export default function CategoriesPage() {
             >
               <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
                 <h3 className="text-lg font-bold">Criar Nova Categoria</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">
+                <button onClick={() => setIsCatModalOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -211,11 +252,73 @@ export default function CategoriesPage() {
                 </div>
 
                 <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm">
+                  <button type="button" onClick={() => setIsCatModalOpen(false)} className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm">
                     Cancelar
                   </button>
                   <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-500/20">
                     Salvar Categoria
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Nova Regra IA */}
+      <AnimatePresence>
+        {isRuleModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-900 border border-gray-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative text-white"
+            >
+              <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-amber-300" />
+                  Criar Regra Automática por IA
+                </h3>
+                <button onClick={() => setIsRuleModalOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddRule} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Se o texto no extrato contiver:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Netflix, Uber, Carrefour"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Classificar automaticamente como:</label>
+                  <select
+                    value={targetCategory}
+                    onChange={(e) => setTargetCategory(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name} ({cat.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button type="button" onClick={() => setIsRuleModalOpen(false)} className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm">
+                    Cancelar
+                  </button>
+                  <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-amber-600 to-indigo-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-amber-500/20">
+                    Criar Regra IA
                   </button>
                 </div>
               </form>

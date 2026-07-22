@@ -68,6 +68,7 @@ export default function DashboardPage() {
   const [txAmount, setTxAmount] = useState("");
   const [txType, setTxType] = useState<"income" | "expense">("expense");
   const [txDate, setTxDate] = useState(new Date().toISOString().split("T")[0]);
+  const [txCategory, setTxCategory] = useState("Alimentação & Mercado");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
 
@@ -584,6 +585,30 @@ export default function DashboardPage() {
                       className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                    Categoria (Selecione da Lista)
+                  </label>
+                  <select
+                    value={txCategory}
+                    onChange={(e) => setTxCategory(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="Alimentação & Mercado">Alimentação & Mercado</option>
+                    <option value="Lazer & Restaurantes">Lazer & Restaurantes</option>
+                    <option value="Transporte & Combustível">Transporte & Combustível</option>
+                    <option value="Moradia & Contas">Moradia & Contas</option>
+                    <option value="Saúde & Cuidados">Saúde & Cuidados</option>
+                    <option value="Educação & Cursos">Educação & Cursos</option>
+                    <option value="Assinaturas & SaaS">Assinaturas & SaaS</option>
+                    <option value="Salário & Proventos">Salário & Proventos</option>
+                    <option value="Reserva & Investimentos">Reserva & Investimentos</option>
+                    <option value="Viagem & Férias">Viagem & Férias</option>
+                    <option value="Veículos">Veículos</option>
+                    <option value="Outros">Outros</option>
+                  </select>
                 </div>
 
                 <div className="pt-4 flex gap-3">
