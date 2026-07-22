@@ -8,6 +8,9 @@ import {
   ArrowUpRight, ArrowDownRight, Plus, LogOut,
   Sparkles, RefreshCw, X, CheckCircle
 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
+} from "recharts";
 
 interface DashboardData {
   balance: number;
@@ -356,34 +359,22 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="h-64 flex items-end gap-3 pt-6 pb-2 px-2 border-b border-gray-800">
-              {(data?.monthly_data || []).map((item, i) => {
-                const maxVal = Math.max(
-                  ...(data?.monthly_data || []).map((d) => Math.max(d.income, d.expense)),
-                  1
-                );
-                const incomeH = (item.income / maxVal) * 180;
-                const expenseH = (item.expense / maxVal) * 180;
-                const monthName = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][item.month] || `M${item.month}`;
-
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                    <div className="w-full flex items-end justify-center gap-1">
-                      <div
-                        className="w-full max-w-[16px] bg-emerald-500/80 group-hover:bg-emerald-400 rounded-t transition-all"
-                        style={{ height: `${Math.max(incomeH, 4)}px` }}
-                        title={`Receita: ${formatCurrency(item.income)}`}
-                      />
-                      <div
-                        className="w-full max-w-[16px] bg-rose-500/80 group-hover:bg-rose-400 rounded-t transition-all"
-                        style={{ height: `${Math.max(expenseH, 4)}px` }}
-                        title={`Despesa: ${formatCurrency(item.expense)}`}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-400 font-medium">{monthName}</span>
-                  </div>
-                );
-              })}
+            <div className="h-64 pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(data?.monthly_data || []).map((d) => ({
+                    ...d,
+                    monthName: ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][d.month] || `M${d.month}`,
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="monthName" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", borderColor: "#374151", color: "#fff" }} />
+                  <Bar dataKey="income" name="Receita" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name="Despesa" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </motion.div>
 

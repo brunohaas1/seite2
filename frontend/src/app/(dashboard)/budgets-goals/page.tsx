@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Target, PiggyBank, Plus, ArrowUpRight, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Target, PiggyBank, Plus, ArrowUpRight, AlertTriangle, CheckCircle2, X } from "lucide-react";
 
 interface Goal {
   id: string;
@@ -36,12 +36,57 @@ const initialBudgets: Budget[] = [
 export default function BudgetsGoalsPage() {
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [budgets, setBudgets] = useState<Budget[]>(initialBudgets);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Form State
+  const [title, setTitle] = useState("");
+  const [targetAmount, setTargetAmount] = useState("");
+  const [currentAmount, setCurrentAmount] = useState("");
+  const [category, setCategory] = useState("Reserva");
+  const [deadline, setDeadline] = useState("");
+  const [toastSuccess, setToastSuccess] = useState(false);
+
+  const handleAddGoal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !targetAmount) return;
+
+    const newGoal: Goal = {
+      id: Date.now().toString(),
+      title,
+      target: parseFloat(targetAmount),
+      current: currentAmount ? parseFloat(currentAmount) : 0,
+      deadline: deadline || "2026-12-31",
+      category,
+    };
+
+    setGoals([newGoal, ...goals]);
+    setIsModalOpen(false);
+    setTitle("");
+    setTargetAmount("");
+    setCurrentAmount("");
+    setToastSuccess(true);
+    setTimeout(() => setToastSuccess(false), 3000);
+  };
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+      <AnimatePresence>
+        {toastSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-sm"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            Nova Meta cadastrada com sucesso!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -52,7 +97,10 @@ export default function BudgetsGoalsPage() {
             Planeje seus objetivos financeiros e acompanhe o teto de gastos por categoria.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
+        >
           <Plus className="h-4 w-4" />
           Nova Meta / Orçamento
         </button>
@@ -153,6 +201,124 @@ export default function BudgetsGoalsPage() {
           })}
         </div>
       </div>
+
+      {/* Modal Nova Meta */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-900 border border-gray-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative text-white"
+            >
+              <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                <h3 className="text-lg font-bold">Criar Nova Meta Financeira</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddGoal} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                    Título da Meta
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Viagem Europa, Reserva de Emergência"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Valor Alvo (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="Ex: 20000.00"
+                      value={targetAmount}
+                      onChange={(e) => setTargetAmount(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Já Guardado (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={currentAmount}
+                      onChange={(e) => setCurrentAmount(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Categoria
+                    </label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Reserva">Reserva</option>
+                      <option value="Viagem">Viagem</option>
+                      <option value="Veículos">Veículos</option>
+                      <option value="Imóveis">Imóveis</option>
+                      <option value="Educação">Educação</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
+                      Data Limite
+                    </label>
+                    <input
+                      type="date"
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl text-sm transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20"
+                  >
+                    Salvar Meta
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
