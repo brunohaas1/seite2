@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, ScanText, Sparkles, TrendingUp,
-  FileSpreadsheet, Plus, LogOut, Menu, X, Wallet
+  FileSpreadsheet, Target, Calendar, FileText, LogOut, Menu, X
 } from "lucide-react";
 import { useState } from "react";
 
@@ -19,7 +19,10 @@ export function Navbar() {
     { name: "OCR & Leitor", href: "/ocr", icon: ScanText },
     { name: "IA Financeira", href: "/ai-assistant", icon: Sparkles },
     { name: "Investimentos", href: "/investments", icon: TrendingUp },
-    { name: "Importar Extratos", href: "/import", icon: FileSpreadsheet },
+    { name: "Importar", href: "/import", icon: FileSpreadsheet },
+    { name: "Metas", href: "/budgets-goals", icon: Target },
+    { name: "Agenda", href: "/calendar", icon: Calendar },
+    { name: "Relatórios", href: "/reports", icon: FileText },
   ];
 
   const handleLogout = () => {
