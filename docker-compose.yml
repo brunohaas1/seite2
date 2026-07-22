@@ -1,6 +1,4 @@
 # Seite2 - Sistema Financeiro Completo
-# Docker Compose para desenvolvimento
-
 
 services:
   backend:
@@ -13,10 +11,9 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/seite2
       - REDIS_URL=redis://redis:6379/0
       - MINIO_ENDPOINT=minio:9000
-      - ENVIRONMENT=development
-      - DEBUG=true
+      - ENVIRONMENT=production
+      - DEBUG=false
     volumes:
-      - ./backend:/app
       - backend_media:/app/media
       - backend_static:/app/static
     depends_on:
@@ -37,12 +34,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=/api/v1
     depends_on:
       - backend
     networks:
@@ -109,8 +103,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
-    volumes:
-      - ./backend:/app
     depends_on:
       - redis
       - db
@@ -128,8 +120,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
-    volumes:
-      - ./backend:/app
     depends_on:
       - redis
       - db
@@ -161,4 +151,4 @@ volumes:
 
 networks:
   seite2_network:
-    driver: bridge
+    driver: bridge
