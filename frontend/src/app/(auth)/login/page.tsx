@@ -1,132 +1,199 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Mail, Lock, Github, ChromeIcon as Google } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Sparkles, AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
-  password: z.string().min(8, "Mínimo de 8 caracteres"),
+  password: z.string().min(6, "Mínimo de 6 caracteres"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "demo@seite2.com",
+      password: "password123",
+    },
   });
 
-  const onSubmit = async (data: LoginForm) => {
+  const handleLoginOrRegister = async (data: LoginForm) => {
     setIsLoading(true);
+    setErrorMessage(null);
+
     try {
-      // TODO: Implementar autenticação
-      console.log("Login:", data);
-    } catch (error) {
-      console.error(error);
+      // 1. Tentar Login
+      let res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      // 2. Se a conta não existir, tentar registrar automaticamente
+      if (!res.ok && res.status === 401) {
+        const regRes = await fetch("/api/v1/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            name: data.email.split("@")[0] || "Usuário",
+          }),
+        });
+
+        if (regRes.ok) {
+          const regJson = await regRes.json();
+          if (regJson.access_token) {
+            localStorage.setItem("token", regJson.access_token);
+            localStorage.setItem("user", JSON.stringify(regJson.user));
+            router.push("/dashboard");
+            return;
+          }
+        }
+      }
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || "Falha na autenticação. Verifique seu e-mail e senha.");
+      }
+
+      const json = await res.json();
+      if (json.access_token) {
+        localStorage.setItem("token", json.access_token);
+        localStorage.setItem("user", JSON.stringify(json.user));
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erro de conexão com a API.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDemoLogin = async () => {
+    setValue("email", "demo@seite2.com");
+    setValue("password", "password123");
+    await handleLoginOrRegister({
+      email: "demo@seite2.com",
+      password: "password123",
+    });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-gray-900 to-black p-4 text-white">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="glass rounded-2xl p-8 shadow-xl">
-          {/* Logo */}
+        <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
+          {/* Logo & Headline */}
           <div className="text-center mb-8">
             <motion.h1
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
-              className="text-3xl font-bold gradient-text"
+              className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400"
             >
               Seite2
             </motion.h1>
-            <p className="text-muted-foreground mt-2">
-              Entre na sua conta financeira
+            <p className="text-gray-400 text-sm mt-2">
+              Sistema Financeiro & Gestão SaaS
             </p>
           </div>
 
+          {/* Quick Demo Access Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleDemoLogin}
+            type="button"
+            disabled={isLoading}
+            className="w-full mb-6 py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all"
+          >
+            <Sparkles className="h-5 w-5 text-amber-300" />
+            Entrar em Modo Demonstração (1-Clique)
+          </motion.button>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-gray-800 px-3 text-gray-400 font-medium">
+                Ou entre com seus dados
+              </span>
+            </div>
+          </div>
+
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-sm text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(handleLoginOrRegister)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5">
+              <label className="block text-sm font-medium mb-1.5 text-gray-300">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   {...register("email")}
                   type="email"
                   placeholder="seu@email.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-700 bg-gray-900/60 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                 />
               </div>
               {errors.email && (
-                <p className="text-sm text-error mt-1">{errors.email.message}</p>
+                <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5">
+              <label className="block text-sm font-medium mb-1.5 text-gray-300">
                 Senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-2.5 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className="w-full pl-10 pr-12 py-2.5 rounded-xl border border-gray-700 bg-gray-900/60 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-error mt-1">
-                  {errors.password.message}
-                </p>
+                <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>
               )}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                Lembrar-me
-              </label>
-              <a
-                href="/forgot-password"
-                className="text-sm text-primary hover:text-primary-600 transition-colors"
-              >
-                Esqueceu a senha?
-              </a>
             </div>
 
             <motion.button
@@ -134,55 +201,11 @@ export default function LoginPage() {
               whileTap={{ scale: 0.99 }}
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50 text-sm shadow-md"
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading ? "Entrando..." : "Entrar / Cadastrar"}
             </motion.button>
           </form>
-
-          {/* Social Login */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Ou continue com
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-input hover:bg-accent transition-colors"
-              >
-                <Google className="h-4 w-4" />
-                <span className="text-sm">Google</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-input hover:bg-accent transition-colors"
-              >
-                <Github className="h-4 w-4" />
-                <span className="text-sm">GitHub</span>
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Register link */}
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Não tem conta?{" "}
-            <a
-              href="/register"
-              className="text-primary hover:text-primary-600 font-medium transition-colors"
-            >
-              Cadastre-se
-            </a>
-          </p>
         </div>
       </motion.div>
     </div>

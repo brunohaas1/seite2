@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         default="your-secret-key-change-in-production",
         alias="JWT_SECRET_KEY",
     )
-    JWT_ALGORITHM: str = "RS256"
+    JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     JWT_PRIVATE_KEY_PATH: Optional[str] = None
