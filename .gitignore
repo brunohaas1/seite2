@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+venv/
+.env
+*.env.local
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+docker-data/
+pgdata/
+redis-data/
+minio-data/
+
+# Backend
+backend/media/
+backend/static/
+backend/htmlcov/
+backend/.coverage
+backend/.pytest_cache/
+backend/alembic/versions/*.pyc
+*.db
+
+# Frontend
+frontend/.next/
+frontend/out/
+frontend/coverage/
+
+# Logs
+*.log
+logs/
+
+# Backups
+backups/
+*.bak
+
+# SSL
+ssl/*.key
+ssl/*.crt
+ssl/*.pem
+
+# Secrets
+*.pem
+*.key
+secrets/
+
+# OS
+Thumbs.db
+Desktop.ini
