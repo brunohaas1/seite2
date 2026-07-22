@@ -1,0 +1,17 @@
+{
+  "name": "Seite2 - Financial SaaS Platform",
+  "short_name": "Seite2",
+  "description": "Sistema financeiro inteligente com OCR, IA e gestão de patrimônio",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -28,8 +28,9 @@ export const metadata: Metadata = {
   creator: "Seite2",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/apple-touch-icon.png",
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
   },
 };
 
