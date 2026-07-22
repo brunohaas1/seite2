@@ -1,7 +1,6 @@
 # Seite2 - Sistema Financeiro Completo
 # Docker Compose para desenvolvimento
 
-version: "3.9"
 
 services:
   backend:
