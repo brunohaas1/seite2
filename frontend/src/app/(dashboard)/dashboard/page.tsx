@@ -208,55 +208,32 @@ export default function DashboardPage() {
       </AnimatePresence>
 
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-        {/* Top Header */}
+        {/* Sub Header / Action Bar */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center justify-between gap-4 bg-gray-900/60 backdrop-blur-xl border border-gray-800 p-4 rounded-2xl shadow-lg"
+          className="flex items-center justify-between gap-4"
         >
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-black text-xl shadow-md">
-              S2
-            </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">
-                Seite2 Dashboard
-              </h1>
-              <p className="text-xs text-gray-400">
-                {isDemo ? "Modo Demonstração Ativo" : "Conectado ao Servidor ZimaOS"}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+              Visão Geral Financeira
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              {isDemo ? "Visualizando em Modo Demonstração" : "Conectado ao Servidor ZimaOS em tempo real"}
+            </p>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto text-xs font-medium bg-gray-950/60 p-1.5 rounded-xl border border-gray-800">
-            <a href="/dashboard" className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold shadow-sm">Dashboard</a>
-            <a href="/ocr" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">OCR & Leitor</a>
-            <a href="/ai-assistant" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">IA Financeira</a>
-            <a href="/investments" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">Investimentos</a>
-            <a href="/import" className="px-3 py-1.5 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg transition-colors">Importar</a>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Nova Transação</span>
-            </motion.button>
-
-            <button
-              onClick={handleLogout}
-              className="p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-xl transition-colors"
-              title="Sair"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nova Transação</span>
+          </motion.button>
         </motion.div>
+
 
         {/* Demo Banner */}
         {isDemo && (
