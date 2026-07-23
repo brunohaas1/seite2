@@ -35,7 +35,7 @@ async def list_transactions(
     """List user transactions with pagination and optional filters."""
     conditions = [
         Transaction.user_id == current_user.id,
-        Transaction.is_deleted.is_(False),
+        Transaction.deleted_at.is_(None),
     ]
     if start_date is not None:
         conditions.append(Transaction.date >= start_date)
@@ -137,7 +137,7 @@ async def get_transaction(
         select(Transaction).where(
             Transaction.id == transaction_id,
             Transaction.user_id == current_user.id,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
         )
     )
     transaction = result.scalar_one_or_none()
@@ -158,7 +158,7 @@ async def update_transaction(
         select(Transaction).where(
             Transaction.id == transaction_id,
             Transaction.user_id == current_user.id,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
         )
     )
     transaction = result.scalar_one_or_none()
@@ -183,7 +183,7 @@ async def delete_transaction(
         select(Transaction).where(
             Transaction.id == transaction_id,
             Transaction.user_id == current_user.id,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
         )
     )
     transaction = result.scalar_one_or_none()

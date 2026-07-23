@@ -19,14 +19,14 @@ class UserUseCase:
     async def get_by_id(self, user_id: str) -> Optional[User]:
         """Get user by ID."""
         result = await self.db.execute(
-            select(User).where(User.id == uuid.UUID(user_id), User.is_deleted.is_(False))
+            select(User).where(User.id == uuid.UUID(user_id), User.deleted_at.is_(None))
         )
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> Optional[User]:
         """Get user by email."""
         result = await self.db.execute(
-            select(User).where(User.email == email, User.is_deleted.is_(False))
+            select(User).where(User.email == email, User.deleted_at.is_(None))
         )
         return result.scalar_one_or_none()
 
@@ -95,7 +95,7 @@ class UserUseCase:
         is_active: Optional[bool] = None,
     ) -> list[User]:
         """List users with pagination."""
-        query = select(User).where(User.is_deleted.is_(False))
+        query = select(User).where(User.deleted_at.is_(None))
 
         if is_active is not None:
             query = query.where(User.is_active == is_active)
@@ -106,7 +106,7 @@ class UserUseCase:
 
     async def count_users(self, is_active: Optional[bool] = None) -> int:
         """Count users."""
-        query = select(User).where(User.is_deleted.is_(False))
+        query = select(User).where(User.deleted_at.is_(None))
 
         if is_active is not None:
             query = query.where(User.is_active == is_active)

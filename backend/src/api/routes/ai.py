@@ -84,7 +84,7 @@ async def _process_financial_query(query: str, user_id: uuid.UUID, db) -> dict:
             Transaction.user_id == user_id,
             Transaction.type == "income",
             Transaction.date >= month_start,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
     )
@@ -93,7 +93,7 @@ async def _process_financial_query(query: str, user_id: uuid.UUID, db) -> dict:
             Transaction.user_id == user_id,
             Transaction.type == "expense",
             Transaction.date >= month_start,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
     )
@@ -110,7 +110,7 @@ async def _process_financial_query(query: str, user_id: uuid.UUID, db) -> dict:
             Transaction.user_id == user_id,
             Transaction.type == "expense",
             Transaction.date >= month_start,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
         .group_by(Transaction.category_id)
@@ -182,7 +182,7 @@ async def analyze_finances(
             Transaction.user_id == current_user.id,
             Transaction.type == "income",
             Transaction.date >= month_start,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
     )
@@ -191,7 +191,7 @@ async def analyze_finances(
             Transaction.user_id == current_user.id,
             Transaction.type == "expense",
             Transaction.date >= month_start,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
     )

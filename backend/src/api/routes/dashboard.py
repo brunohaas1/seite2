@@ -42,7 +42,7 @@ async def dashboard_overview(
             Transaction.user_id == current_user.id,
             Transaction.type == "income",
             Transaction.date >= start_date,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
     )
@@ -51,7 +51,7 @@ async def dashboard_overview(
             Transaction.user_id == current_user.id,
             Transaction.type == "expense",
             Transaction.date >= start_date,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
             Transaction.is_confirmed == True,
         )
     )
@@ -63,7 +63,7 @@ async def dashboard_overview(
         select(Transaction)
         .where(
             Transaction.user_id == current_user.id,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
         )
         .order_by(Transaction.date.desc())
         .limit(10)
@@ -80,7 +80,7 @@ async def dashboard_overview(
                 Transaction.type == "income",
                 extract("year", Transaction.date) == current_year,
                 extract("month", Transaction.date) == month,
-                Transaction.is_deleted.is_(False),
+                Transaction.deleted_at.is_(None),
             )
         )
         exp = await db.execute(
@@ -89,7 +89,7 @@ async def dashboard_overview(
                 Transaction.type == "expense",
                 extract("year", Transaction.date) == current_year,
                 extract("month", Transaction.date) == month,
-                Transaction.is_deleted.is_(False),
+                Transaction.deleted_at.is_(None),
             )
         )
         monthly_data.append({
@@ -108,7 +108,7 @@ async def dashboard_overview(
             Transaction.user_id == current_user.id,
             Transaction.type == "income",
             Transaction.date >= start_date,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
         )
         .group_by(Transaction.category_id)
         .limit(10)
@@ -122,7 +122,7 @@ async def dashboard_overview(
             Transaction.user_id == current_user.id,
             Transaction.type == "expense",
             Transaction.date >= start_date,
-            Transaction.is_deleted.is_(False),
+            Transaction.deleted_at.is_(None),
         )
         .group_by(Transaction.category_id)
         .limit(10)
@@ -179,7 +179,7 @@ async def cash_flow(
                 Transaction.type == "income",
                 Transaction.date >= month_start,
                 Transaction.date <= month_end,
-                Transaction.is_deleted.is_(False),
+                Transaction.deleted_at.is_(None),
                 Transaction.is_confirmed == True,
             )
         )
@@ -189,7 +189,7 @@ async def cash_flow(
                 Transaction.type == "expense",
                 Transaction.date >= month_start,
                 Transaction.date <= month_end,
-                Transaction.is_deleted.is_(False),
+                Transaction.deleted_at.is_(None),
                 Transaction.is_confirmed == True,
             )
         )

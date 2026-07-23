@@ -22,7 +22,7 @@ class AccountUseCase:
             select(Account).where(
                 Account.id == account_id,
                 Account.user_id == user_id,
-                Account.is_deleted.is_(False),
+                Account.deleted_at.is_(None),
             )
         )
         return result.scalar_one_or_none()
@@ -30,7 +30,7 @@ class AccountUseCase:
     async def list_by_user(self, user_id: UUID) -> list[Account]:
         result = await self.db.execute(
             select(Account)
-            .where(Account.user_id == user_id, Account.is_deleted.is_(False))
+            .where(Account.user_id == user_id, Account.deleted_at.is_(None))
             .order_by(Account.name)
         )
         return result.scalars().all()
@@ -70,7 +70,7 @@ class AccountUseCase:
             select(func.sum(Transaction.amount)).where(
                 Transaction.account_id == account_id,
                 Transaction.type == "income",
-                Transaction.is_deleted.is_(False),
+                Transaction.deleted_at.is_(None),
                 Transaction.is_confirmed == True,
             )
         )
@@ -78,7 +78,7 @@ class AccountUseCase:
             select(func.sum(Transaction.amount)).where(
                 Transaction.account_id == account_id,
                 Transaction.type == "expense",
-                Transaction.is_deleted.is_(False),
+                Transaction.deleted_at.is_(None),
                 Transaction.is_confirmed == True,
             )
         )
@@ -110,7 +110,7 @@ class AccountUseCase:
                 select(func.sum(Transaction.amount)).where(
                     Transaction.account_id == account.id,
                     Transaction.type == "income",
-                    Transaction.is_deleted.is_(False),
+                    Transaction.deleted_at.is_(None),
                     Transaction.is_confirmed == True,
                 )
             )
@@ -118,7 +118,7 @@ class AccountUseCase:
                 select(func.sum(Transaction.amount)).where(
                     Transaction.account_id == account.id,
                     Transaction.type == "expense",
-                    Transaction.is_deleted.is_(False),
+                    Transaction.deleted_at.is_(None),
                     Transaction.is_confirmed == True,
                 )
             )
