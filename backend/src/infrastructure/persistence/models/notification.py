@@ -27,7 +27,7 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
     action_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    metadata: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user = relationship("User")
 

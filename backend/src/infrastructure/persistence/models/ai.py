@@ -69,7 +69,7 @@ class AIPrediction(UUIDMixin, TimestampMixin, Base):
     actual_value: Mapped[float | None] = mapped_column(
         Numeric(15, 2), nullable=True
     )
-    metadata: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     user = relationship("User")
