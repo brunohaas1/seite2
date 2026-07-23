@@ -58,10 +58,5 @@ class SoftDeleteMixin:
     def is_deleted(self) -> bool:
         return self.deleted_at is not None
 
-    @is_deleted.inplace_expression
-    @classmethod
-    def _is_deleted_expression(cls):
-        return cls.deleted_at.isnot(None)
-
     def soft_delete(self) -> None:
         self.deleted_at = datetime.now(timezone.utc)
