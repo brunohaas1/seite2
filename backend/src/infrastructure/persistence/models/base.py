@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 class Base(DeclarativeBase):
@@ -53,9 +54,14 @@ class SoftDeleteMixin:
         default=None,
     )
 
-    @property
+    @hybrid_property
     def is_deleted(self) -> bool:
         return self.deleted_at is not None
+
+    @is_deleted.inplace_expression
+    @classmethod
+    def _is_deleted_expression(cls):
+        return cls.deleted_at.isnot(None)
 
     def soft_delete(self) -> None:
         self.deleted_at = datetime.now(timezone.utc)
