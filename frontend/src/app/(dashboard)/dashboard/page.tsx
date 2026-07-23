@@ -1,37 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp, TrendingDown, DollarSign, Wallet,
-  ArrowUpRight, ArrowDownRight, Plus, LogOut,
-  Sparkles, RefreshCw, X, CheckCircle, CreditCard,
-  Target, Calendar, Clock, ChevronRight, Landmark
+  ArrowUpRight, ArrowDownRight, Plus,
+  Sparkles, RefreshCw, X, CreditCard,
+  Target, Clock, ChevronRight,
 } from "lucide-react";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 
-interface DashboardData {
-  balance: number;
-  period_income: number;
-  period_expense: number;
-  period_net: number;
-  account_count: number;
-  recent_transactions: Array<{
-    id: string;
-    description: string;
-    amount: number;
-    type: string;
-    date: string;
-  }>;
-  monthly_data: Array<{
-    month: number;
-    income: number;
-    expense: number;
-  }>;
-}
+import { useDashboardOverview, useCreateTransaction, useAccounts, useCategories, getAuthToken } from "@/lib/api";
+import type { DashboardOverview } from "@/lib/api";
+import { useToast } from "@/lib/toast/useToast";
+
+// ── Types ──
+
+type DashboardData = DashboardOverview;
 
 const defaultDemoData: DashboardData = {
   balance: 42850.50,
@@ -56,156 +44,99 @@ const defaultDemoData: DashboardData = {
   ],
 };
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
+// ── Page ──
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
+  const toast = useToast();
+  const token = getAuthToken();
 
-  // Modal State
+  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [txDesc, setTxDesc] = useState("");
   const [txAmount, setTxAmount] = useState("");
   const [txType, setTxType] = useState<"income" | "expense">("expense");
   const [txDate, setTxDate] = useState(new Date().toISOString().split("T")[0]);
-  const [txCategory, setTxCategory] = useState("Alimentação & Mercado");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successToast, setSuccessToast] = useState(false);
+  const [txCategoryId, setTxCategoryId] = useState("");
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  // ── Data (A3: React Query instead of manual useEffect+fetch) ──
+  // Gate on token: if no token, don't fire the query, use demo data.
+  const overview = useDashboardOverview("month");
+  const accounts = useAccounts();
+  const createTx = useCreateTransaction();
 
-  const fetchDashboardData = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setIsDemo(true);
-      setData(defaultDemoData);
-      setLoading(false);
-      return;
-    }
+  const isDemo = !token || (!!overview.error && !overview.data);
+  const data: DashboardData = overview.data ?? defaultDemoData;
 
-    try {
-      const res = await fetch("/api/v1/dashboard/overview?period=month", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && (json.balance !== 0 || json.recent_transactions?.length > 0)) {
-          setData(json);
-          setIsDemo(false);
-        } else {
-          setData({ ...defaultDemoData, ...json });
-          setIsDemo(true);
-        }
-      } else {
-        setIsDemo(true);
-        setData(defaultDemoData);
-      }
-    } catch (err) {
-      console.error("Failed to fetch dashboard:", err);
-      setIsDemo(true);
-      setData(defaultDemoData);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = token ? overview.isLoading : false;
 
+  // ── Create transaction ──
   const handleCreateTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!txDesc || !txAmount) return;
 
-    setIsSubmitting(true);
     const amountVal = parseFloat(txAmount);
-    const token = localStorage.getItem("token");
 
-    const newTx = {
-      id: Date.now().toString(),
-      description: txDesc,
-      amount: amountVal,
-      type: txType,
-      date: txDate || new Date().toISOString(),
-    };
-
-    if (token) {
-      try {
-        await fetch("/api/v1/transactions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            description: txDesc,
-            amount: amountVal,
-            type: txType,
-            date: txDate || new Date().toISOString(),
-          }),
-        });
-      } catch (err) {
-        console.error("Failed to push transaction to API:", err);
-      }
+    // Resolve an account_id (the backend TransactionCreate schema requires it).
+    // Without this, the previous POST always 422'd.
+    const firstAccountId = accounts.data?.[0]?.id;
+    if (!firstAccountId) {
+      toast.error("Nenhuma conta encontrada. Crie uma conta antes de lançar transações.");
+      return;
     }
 
-    // Update local state dynamically
-    setData((prev) => {
-      if (!prev) return defaultDemoData;
-      const newIncome = txType === "income" ? prev.period_income + amountVal : prev.period_income;
-      const newExpense = txType === "expense" ? prev.period_expense + amountVal : prev.period_expense;
-      const newNet = newIncome - newExpense;
-
-      return {
-        ...prev,
-        balance: prev.balance + (txType === "income" ? amountVal : -amountVal),
-        period_income: newIncome,
-        period_expense: newExpense,
-        period_net: newNet,
-        recent_transactions: [newTx, ...prev.recent_transactions],
-      };
-    });
-
-    setIsSubmitting(false);
+    // Close modal + reset fields immediately (mutation resolves asynchronously with toasts)
     setIsModalOpen(false);
     setTxDesc("");
     setTxAmount("");
-    setSuccessToast(true);
-    setTimeout(() => setSuccessToast(false), 3000);
+
+    createTx.mutate(
+      {
+        account_id: firstAccountId,
+        ...(txCategoryId ? { category_id: txCategoryId } : {}),
+        description: txDesc,
+        amount: amountVal,
+        type: txType,
+        date: txDate || new Date().toISOString(),
+      },
+      {
+        onSuccess: () => toast.success("Transação registrada com sucesso!"),
+        onError: () =>
+          toast.error("Erro ao salvar no servidor. Tente novamente."),
+      },
+    );
   };
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-
+  // ── Skeleton loading (P7) ──
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="h-8 w-8 text-indigo-500 animate-spin" />
-          <span className="text-gray-400 text-sm font-medium">Carregando Seite2 Dashboard...</span>
+      <div className="min-h-screen bg-gray-950 text-white animate-pulse p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        <div className="h-8 w-64 bg-gray-800 rounded-lg" />
+        <div className="h-16 bg-gray-800/60 rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 bg-gray-800/60 rounded-2xl" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 bg-gray-800/60 rounded-2xl" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-80 bg-gray-800/60 rounded-2xl" />
+          <div className="h-80 bg-gray-800/60 rounded-2xl" />
         </div>
       </div>
     );
   }
 
+  // ── Render ──
   return (
     <div className="min-h-screen bg-gray-950 text-white selection:bg-indigo-500 selection:text-white">
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {successToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 font-medium"
-          >
-            <CheckCircle className="h-5 w-5" />
-            Transação registrada com sucesso!
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
         {/* Sub Header / Action Bar */}
         <motion.div
@@ -217,8 +148,18 @@ export default function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-extrabold text-white">
               Visão Geral Financeira 360°
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              {isDemo ? "Visualizando em Modo Demonstração Interativo" : "Conectado ao Servidor ZimaOS em tempo real"}
+            <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
+              {isDemo ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-500/20">
+                  <Sparkles className="h-3 w-3" />
+                  Demonstração
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Ao Vivo
+                </span>
+              )}
             </p>
           </div>
 
@@ -240,7 +181,10 @@ export default function DashboardPage() {
               <Sparkles className="h-5 w-5" />
             </div>
             <p className="text-xs md:text-sm text-gray-300">
-              <strong className="text-white">Insight da IA Seite2:</strong> Seus gastos com Alimentação estão <span className="text-emerald-400 font-bold">12% abaixo do teto</span>. Você pode aportar R$ 350,00 adicionais na sua Meta de Reserva!
+              <strong className="text-white">Insight da IA Seite2:</strong>{" "}
+              Seus gastos com Alimentação estão{" "}
+              <span className="text-emerald-400 font-bold">12% abaixo do teto</span>.{" "}
+              Você pode aportar R$ 350,00 adicionais na sua Meta de Reserva!
             </p>
           </div>
           <button
@@ -269,7 +213,7 @@ export default function DashboardPage() {
             </p>
             <div className="flex items-center gap-1 mt-2 text-xs text-emerald-400">
               <ArrowUpRight className="h-3 w-3" />
-              <span>Soma de 4 contas conectadas</span>
+              <span>Soma de {data?.account_count || 0} contas conectadas</span>
             </div>
           </motion.div>
 
@@ -338,10 +282,9 @@ export default function DashboardPage() {
 
         {/* Executive Quick Summaries Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Cartões summary */}
           <div
             onClick={() => router.push("/cards")}
-            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-indigo-500/5 space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
@@ -353,10 +296,9 @@ export default function DashboardPage() {
             <span className="text-[11px] text-gray-400 block">Faturas em aberto • Vence dia 10</span>
           </div>
 
-          {/* Investimentos summary */}
           <div
             onClick={() => router.push("/investments")}
-            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-indigo-500/5 space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
@@ -368,10 +310,9 @@ export default function DashboardPage() {
             <span className="text-[11px] text-gray-400 block">Rendimento: +18.4% a.a.</span>
           </div>
 
-          {/* Metas summary */}
           <div
             onClick={() => router.push("/budgets-goals")}
-            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-indigo-500/5 space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
@@ -383,10 +324,9 @@ export default function DashboardPage() {
             <span className="text-[11px] text-gray-400 block">Reserva de Emergência</span>
           </div>
 
-          {/* Agenda / Vencimentos summary */}
           <div
             onClick={() => router.push("/calendar")}
-            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all space-y-2 group"
+            className="bg-gray-900/60 border border-gray-800 hover:border-indigo-500/50 rounded-2xl p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-indigo-500/5 space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
@@ -411,13 +351,14 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-white">Fluxo Financeiro Mensal (Receitas vs Despesas)</h2>
             </div>
-
             <div className="h-64 pt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={(data?.monthly_data || []).map((d) => ({
                     ...d,
-                    monthName: ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][d.month] || `M${d.month}`,
+                    monthName:
+                      ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][d.month] ||
+                      `M${d.month}`,
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
@@ -441,7 +382,6 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-white">Transações Recentes</h2>
             </div>
-
             <div className="space-y-3 flex-1 overflow-y-auto max-h-[280px] pr-1">
               {(data?.recent_transactions || []).map((tx, i) => (
                 <motion.div
@@ -480,7 +420,6 @@ export default function DashboardPage() {
                   </span>
                 </motion.div>
               ))}
-
               {(!data?.recent_transactions || data.recent_transactions.length === 0) && (
                 <p className="text-center text-gray-500 py-12 text-sm">
                   Nenhuma transação cadastrada.
@@ -589,26 +528,12 @@ export default function DashboardPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">
-                    Categoria (Selecione da Lista)
+                    Categoria
                   </label>
-                  <select
-                    value={txCategory}
-                    onChange={(e) => setTxCategory(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="Alimentação & Mercado">Alimentação & Mercado</option>
-                    <option value="Lazer & Restaurantes">Lazer & Restaurantes</option>
-                    <option value="Transporte & Combustível">Transporte & Combustível</option>
-                    <option value="Moradia & Contas">Moradia & Contas</option>
-                    <option value="Saúde & Cuidados">Saúde & Cuidados</option>
-                    <option value="Educação & Cursos">Educação & Cursos</option>
-                    <option value="Assinaturas & SaaS">Assinaturas & SaaS</option>
-                    <option value="Salário & Proventos">Salário & Proventos</option>
-                    <option value="Reserva & Investimentos">Reserva & Investimentos</option>
-                    <option value="Viagem & Férias">Viagem & Férias</option>
-                    <option value="Veículos">Veículos</option>
-                    <option value="Outros">Outros</option>
-                  </select>
+                  <CategorySelect
+                    value={txCategoryId}
+                    onChange={setTxCategoryId}
+                  />
                 </div>
 
                 <div className="pt-4 flex gap-3">
@@ -621,10 +546,10 @@ export default function DashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={createTx.isPending}
                     className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
                   >
-                    {isSubmitting ? "Salvando..." : "Salvar Transação"}
+                    {createTx.isPending ? "Salvando..." : "Salvar Transação"}
                   </button>
                 </div>
               </form>
@@ -633,5 +558,42 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── Category select from API ──
+
+function CategorySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { data: categories } = useCategories();
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    >
+      <option value="">Sem categoria</option>
+      {(categories ?? []).map((cat) => (
+        <option key={cat.id} value={cat.id}>
+          {cat.name}
+        </option>
+      ))}
+      {(!categories || categories.length === 0) && (
+        <>
+          <option value="">Alimentação & Mercado</option>
+          <option value="">Lazer & Restaurantes</option>
+          <option value="">Transporte & Combustível</option>
+          <option value="">Moradia & Contas</option>
+          <option value="">Saúde & Cuidados</option>
+          <option value="">Educação & Cursos</option>
+          <option value="">Assinaturas & SaaS</option>
+          <option value="">Salário & Proventos</option>
+          <option value="">Reserva & Investimentos</option>
+          <option value="">Viagem & Férias</option>
+          <option value="">Veículos</option>
+          <option value="">Outros</option>
+        </>
+      )}
+    </select>
   );
 }

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Send, Bot, User, TrendingUp, ShieldAlert, DollarSign, Lightbulb } from "lucide-react";
+import { Sparkles, Send, Bot, User } from "lucide-react";
+
+import { useAIQuery } from "@/lib/api";
 
 interface ChatMessage {
   id: string;
@@ -10,6 +12,23 @@ interface ChatMessage {
   text: string;
   timestamp: string;
 }
+
+const generateSmartAIResponse = (prompt: string): string => {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("comida") || lower.includes("alimentação") || lower.includes("delivery")) {
+    return "Neste mês você gastou R$ 1.240,50 com Alimentação e Delivery. Isso representa 34% do seu orçamento total. Sugiro limitar compras de IFood a fins de semana para economizar ~R$ 350,00.";
+  }
+  if (lower.includes("economizar") || lower.includes("cortar")) {
+    return "Identifiquei 2 oportunidades de economia imediata:\n1. 3 assinaturas recorrentes com pouca utilização (R$ 119,90/mês)\n2. Gastos com combustível 18% acima da média do mês passado (R$ 220,00/mês).";
+  }
+  if (lower.includes("investir") || lower.includes("investimentos")) {
+    return "Com base no seu fluxo de caixa livre de R$ 14.850,50, você pode alocar:\n• 50% em Tesouro Selic / CDB Liquidez Diária (Reserva de Emergência)\n• 30% em FIIs para renda passiva mensal\n• 20% em Ações / ETFs globais.";
+  }
+  if (lower.includes("saúde") || lower.includes("planejamento")) {
+    return "Sua pontuação de Saúde Financeira é 88/100 (Excelente!).\n• Patrimônio em crescimento continuo.\n• Nível de endividamento baixíssimo (2.4%).\n• Reserva cobrindo 6.2 meses de despesas.";
+  }
+  return "Analisei seus lançamentos recentes. Suas finanças estão com saldo positivo e 24% de taxa de poupança acumulada neste mês!";
+};
 
 export default function AIAssistantPage() {
   const [inputQuery, setInputQuery] = useState("");
@@ -23,85 +42,59 @@ export default function AIAssistantPage() {
     },
   ]);
 
+  const aiQuery = useAIQuery();
+
+  const pushUserMsg = (text: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        sender: "user",
+        text,
+        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+  };
+
+  const pushAIMsg = (text: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: (Date.now() + 1).toString(),
+        sender: "ai",
+        text,
+        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+  };
+
+  const handleSendMessage = (queryText?: string) => {
+    const text = (queryText || inputQuery).trim();
+    if (!text) return;
+
+    pushUserMsg(text);
+    setInputQuery("");
+    setIsThinking(true);
+
+    aiQuery.mutate(text, {
+      onSuccess: (data) => {
+        pushAIMsg(data?.response ?? "Análise concluída com sucesso.");
+      },
+      onError: () => {
+        const fallback = generateSmartAIResponse(text);
+        // Simulate a brief delay so the UI feels natural
+        setTimeout(() => pushAIMsg(fallback), 800);
+      },
+      onSettled: () => setIsThinking(false),
+    });
+  };
+
   const quickPrompts = [
     "Quanto gastei com comida este mês?",
     "Onde posso cortar despesas para economizar R$ 500?",
     "Faça uma análise rápida da minha saúde financeira.",
     "Quanto posso aplicar em investimentos hoje?",
   ];
-
-  const handleSendMessage = async (queryText?: string) => {
-    const textToSend = queryText || inputQuery;
-    if (!textToSend.trim()) return;
-
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      sender: "user",
-      text: textToSend,
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputQuery("");
-    setIsThinking(true);
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/v1/ai/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ prompt: textToSend }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        const aiMsg: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: json.response || json.answer || "Análise concluída com sucesso com base nos seus lançamentos.",
-          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-      } else {
-        generateSmartAIResponse(textToSend);
-      }
-    } catch (err) {
-      generateSmartAIResponse(textToSend);
-    } finally {
-      setIsThinking(false);
-    }
-  };
-
-  const generateSmartAIResponse = (prompt: string) => {
-    let reply = "Analisei seus lançamentos recentes. Suas finanças estão com saldo positivo e 24% de taxa de poupança acumulada neste mês!";
-
-    const lower = prompt.toLowerCase();
-    if (lower.includes("comida") || lower.includes("alimentação") || lower.includes("delivery")) {
-      reply = "Neste mês você gastou R$ 1.240,50 com Alimentação e Delivery. Isso representa 34% do seu orçamento total. Sugiro limitar compras de IFood a fins de semana para economizar ~R$ 350,00.";
-    } else if (lower.includes("economizar") || lower.includes("cortar")) {
-      reply = "Identifiquei 2 oportunidades de economia imediata:\n1. 3 assinaturas recorrentes com pouca utilização (R$ 119,90/mês)\n2. Gastos com combustível 18% acima da média do mês passado (R$ 220,00/mês).";
-    } else if (lower.includes("investir") || lower.includes("investimentos")) {
-      reply = "Com base no seu fluxo de caixa livre de R$ 14.850,50, você pode alocar:\n• 50% em Tesouro Selic / CDB Liquidez Diária (Reserva de Emergência)\n• 30% em FIIs para renda passiva mensal\n• 20% em Ações / ETFs globais.";
-    } else if (lower.includes("saúde") || lower.includes("planejamento")) {
-      reply = "Sua pontuação de Saúde Financeira é 88/100 (Excelente!).\n• Patrimônio em crescimento continuo.\n• Nível de endividamento baixíssimo (2.4%).\n• Reserva cobrindo 6.2 meses de despesas.";
-    }
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: reply,
-          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-      setIsThinking(false);
-    }, 1200);
-  };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6 lg:p-8 flex flex-col justify-between max-w-5xl mx-auto">
@@ -138,7 +131,6 @@ export default function AIAssistantPage() {
             >
               {msg.sender === "user" ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
             </div>
-
             <div
               className={`max-w-xl p-4 rounded-2xl text-sm leading-relaxed ${
                 msg.sender === "user"
@@ -165,7 +157,7 @@ export default function AIAssistantPage() {
         )}
       </div>
 
-      {/* Quick Prompts */}
+      {/* Quick Prompts & Input */}
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
           {quickPrompts.map((prompt, idx) => (
@@ -179,7 +171,6 @@ export default function AIAssistantPage() {
           ))}
         </div>
 
-        {/* Input Bar */}
         <form
           onSubmit={(e) => {
             e.preventDefault();

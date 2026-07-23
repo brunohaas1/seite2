@@ -1,5 +1,6 @@
 """Transaction API routes."""
 
+from datetime import datetime
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
@@ -22,22 +23,45 @@ transactions_router = APIRouter(prefix="/api/v1/transactions", tags=["Transactio
 async def list_transactions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    start_date: datetime | None = Query(None, description="ISO datetime, inclusive"),
+    end_date: datetime | None = Query(None, description="ISO datetime, inclusive"),
+    type: str | None = Query(None, pattern="^(income|expense|transfer)$"),
+    category_id: UUID | None = Query(None),
+    account_id: UUID | None = Query(None),
+    search: str | None = Query(None, max_length=200),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List user transactions with pagination."""
-    query = select(Transaction).where(
+    """List user transactions with pagination and optional filters."""
+    conditions = [
         Transaction.user_id == current_user.id,
         Transaction.is_deleted.is_(False),
-    ).order_by(Transaction.date.desc()).offset((page - 1) * page_size).limit(page_size)
+    ]
+    if start_date is not None:
+        conditions.append(Transaction.date >= start_date)
+    if end_date is not None:
+        conditions.append(Transaction.date <= end_date)
+    if type is not None:
+        conditions.append(Transaction.type == type)
+    if category_id is not None:
+        conditions.append(Transaction.category_id == category_id)
+    if account_id is not None:
+        conditions.append(Transaction.account_id == account_id)
+    if search:
+        conditions.append(Transaction.description.ilike(f"%{search}%"))
+
+    query = (
+        select(Transaction)
+        .where(*conditions)
+        .order_by(Transaction.date.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
 
     result = await db.execute(query)
     items = result.scalars().all()
 
-    count_query = select(func.count()).select_from(Transaction).where(
-        Transaction.user_id == current_user.id,
-        Transaction.is_deleted.is_(False),
-    )
+    count_query = select(func.count()).select_from(Transaction).where(*conditions)
     count_result = await db.execute(count_query)
     total = count_result.scalar()
 
@@ -46,7 +70,7 @@ async def list_transactions(
         total=total,
         page=page,
         page_size=page_size,
-        total_pages=(total + page_size - 1) // page_size,
+        total_pages=(total + page_size - 1) // page_size if total else 0,
     )
 
 

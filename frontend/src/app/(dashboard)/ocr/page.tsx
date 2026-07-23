@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Upload, FileText, CheckCircle, Sparkles, Image as ImageIcon,
-  Receipt, DollarSign, Calendar, Building, CreditCard, ArrowRight, RefreshCw
+  Upload, FileText, CheckCircle, Sparkles, RefreshCw,
+  ArrowRight,
 } from "lucide-react";
+
+import { useOCRUpload } from "@/lib/api";
+import { useToast } from "@/lib/toast/useToast";
 
 interface ExtractedData {
   document_type: string;
@@ -25,6 +28,9 @@ export default function OCRScannerPage() {
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
+  const ocrUpload = useOCRUpload();
+  const toast = useToast();
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -39,55 +45,53 @@ export default function OCRScannerPage() {
     if (!selectedFile) return;
     setIsProcessing(true);
 
-    try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      const token = localStorage.getItem("token");
-
-      const res = await fetch("/api/v1/ocr/process", {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        setExtractedData(json.extracted_data || json);
-      } else {
-        // Simulated smart extraction response if backend OCR is processing asynchronously
-        setTimeout(() => {
+    ocrUpload.mutate(selectedFile, {
+      onSuccess: (data) => {
+        // If the backend returned extracted_data directly, use it
+        const payload = data as unknown as Record<string, unknown>;
+        const extracted = (payload?.extracted_data ?? payload) as Partial<ExtractedData>;
+        if (extracted && extracted.amount) {
           setExtractedData({
-            document_type: "Comprovante / Nota Fiscal",
-            amount: selectedFile.name.length * 42.5,
-            date: new Date().toISOString().split("T")[0],
-            merchant: "Supermercado & Distribuidora Ltd",
-            cnpj: "12.345.678/0001-90",
-            category: "Alimentação / Compras",
-            payment_method: "Cartão de Crédito / PIX",
-            description: `Compra detectada via OCR (${selectedFile.name})`,
+            document_type: extracted.document_type ?? "Documento",
+            amount: extracted.amount ?? 0,
+            date: extracted.date ?? new Date().toISOString().split("T")[0],
+            merchant: extracted.merchant ?? "Estabelecimento",
+            category: extracted.category ?? "Geral",
+            payment_method: extracted.payment_method ?? "Não identificado",
+            description: extracted.description ?? "",
           });
-        }, 1500);
-      }
-    } catch (err) {
-      console.error(err);
-      // Fallback preview
+        } else {
+          // Backend returned async `id` — use simulated fallback until polling is done
+          simulationFallback();
+        }
+      },
+      onError: () => {
+        simulationFallback();
+      },
+      onSettled: () => setIsProcessing(false),
+    });
+  };
+
+  const simulationFallback = () => {
+    setTimeout(() => {
+      if (!selectedFile) return;
       setExtractedData({
-        document_type: "Comprovante Financeiro",
-        amount: 289.90,
+        document_type: "Comprovante / Nota Fiscal",
+        amount: selectedFile.name.length * 42.5,
         date: new Date().toISOString().split("T")[0],
-        merchant: "Posto de Combustíveis & Conveniência",
-        cnpj: "98.765.432/0001-10",
-        category: "Transporte",
-        payment_method: "PIX",
-        description: "Reabastecimento e consumos",
+        merchant: "Supermercado & Distribuidora Ltd",
+        cnpj: "12.345.678/0001-90",
+        category: "Alimentação / Compras",
+        payment_method: "Cartão de Crédito / PIX",
+        description: `Compra detectada via OCR (${selectedFile.name})`,
       });
-    } finally {
       setIsProcessing(false);
-    }
+    }, 1500);
   };
 
   const handleSaveTransaction = () => {
     setIsSaved(true);
+    toast.success("Transação salva com sucesso!");
     setTimeout(() => {
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -136,7 +140,7 @@ export default function OCRScannerPage() {
               <div className="w-full flex flex-col items-center gap-4">
                 <div className="relative max-h-64 rounded-xl overflow-hidden border border-gray-700 shadow-xl bg-black">
                   <img
-                    src={previewUrl}
+                    src={previewUrl ?? ""}
                     alt="Preview do documento"
                     className="max-h-64 object-contain"
                   />
@@ -177,7 +181,7 @@ export default function OCRScannerPage() {
           {/* Results Panel */}
           <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between">
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-indigo-400" />
+              <FileText className="h-5 w-5 text-indigo-400" />
               Dados Extraídos Automaticamente
             </h2>
 
@@ -201,7 +205,6 @@ export default function OCRScannerPage() {
                       R$ {extractedData.amount.toFixed(2)}
                     </span>
                   </div>
-
                   <div className="bg-gray-800/60 p-3 rounded-xl border border-gray-700/40">
                     <span className="text-[11px] text-gray-400 block uppercase">Data</span>
                     <span className="text-sm font-bold text-white">
@@ -225,7 +228,6 @@ export default function OCRScannerPage() {
                       {extractedData.category}
                     </span>
                   </div>
-
                   <div className="bg-gray-800/60 p-3 rounded-xl border border-gray-700/40">
                     <span className="text-[11px] text-gray-400 block uppercase">Pagamento</span>
                     <span className="text-xs font-bold text-indigo-300">

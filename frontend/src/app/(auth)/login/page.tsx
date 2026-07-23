@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Mail, Lock, Sparkles, AlertCircle } from "lucide-react";
+import { apiPost, setAuthToken } from "@/lib/api";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -39,49 +40,38 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     try {
-      // 1. Tentar Login
-      let res = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      // 1. Try login
+      const loginRes = await apiPost<{ access_token: string }>(
+        "/auth/login", data,
+      ).catch((err: Error & { status?: number }) => {
+        // 401 → account may not exist yet; fall through to register
+        if (err.status === 401) return null;
+        throw err;
       });
 
-      // 2. Se a conta não existir, tentar registrar automaticamente
-      if (!res.ok && res.status === 401) {
-        const regRes = await fetch("/api/v1/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: data.email,
-            password: data.password,
-            name: data.email.split("@")[0] || "Usuário",
-          }),
-        });
-
-        if (regRes.ok) {
-          const regJson = await regRes.json();
-          if (regJson.access_token) {
-            localStorage.setItem("token", regJson.access_token);
-            localStorage.setItem("user", JSON.stringify(regJson.user));
-            router.push("/dashboard");
-            return;
-          }
-        }
+      if (loginRes?.access_token) {
+        setAuthToken(loginRes.access_token);
+        router.push("/dashboard");
+        return;
       }
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || "Falha na autenticação. Verifique seu e-mail e senha.");
-      }
+      // 2. Auto-register
+      const regRes = await apiPost<{ access_token: string }>("/auth/register", {
+        email: data.email,
+        password: data.password,
+        name: data.email.split("@")[0] || "Usuário",
+      });
 
-      const json = await res.json();
-      if (json.access_token) {
-        localStorage.setItem("token", json.access_token);
-        localStorage.setItem("user", JSON.stringify(json.user));
+      if (regRes.access_token) {
+        setAuthToken(regRes.access_token);
         router.push("/dashboard");
       }
     } catch (err: any) {
-      setErrorMessage(err.message || "Erro de conexão com a API.");
+      const msg =
+        err?.message ??
+        err?.detail ??
+        "Falha na autenticação. Verifique seu e-mail e senha.";
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }
