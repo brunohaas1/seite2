@@ -4,9 +4,11 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin, UUIDMixin
+import uuid
 
 
 class Investment(UUIDMixin, TimestampMixin, Base):
@@ -14,8 +16,8 @@ class Investment(UUIDMixin, TimestampMixin, Base):
 
     __tablename__ = "investments"
 
-    user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     ticker: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
@@ -52,8 +54,8 @@ class InvestmentTransaction(UUIDMixin, TimestampMixin, Base):
 
     __tablename__ = "investment_transactions"
 
-    investment_id: Mapped[str] = mapped_column(
-        ForeignKey("investments.id", ondelete="CASCADE"), nullable=False
+    investment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("investments.id", ondelete="CASCADE"), nullable=False
     )
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(15, 4), nullable=False)

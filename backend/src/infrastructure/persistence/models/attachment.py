@@ -3,6 +3,8 @@
 import uuid
 from datetime import datetime, timezone
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -31,3 +33,13 @@ class Attachment(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+    # Relationships
+    transaction: Mapped["Transaction | None"] = relationship(
+        foreign_keys="[Attachment.transaction_id]",
+        back_populates="attachments",
+    )
+
+
+if TYPE_CHECKING:
+    from .transaction import Transaction
