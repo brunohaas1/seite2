@@ -110,7 +110,10 @@ class Transaction(UUIDMixin, TimestampMixin, SoftDeleteMixin, Base):
 
     # Relationships
     user: Mapped["User"] = relationship()
-    account: Mapped["Account"] = relationship(back_populates="transactions")
+    account: Mapped["Account"] = relationship(
+        foreign_keys="[Transaction.account_id]",
+        back_populates="transactions",
+    )
     category: Mapped["Category | None"] = relationship(back_populates="transactions")
     subcategory: Mapped["Subcategory | None"] = relationship(
         back_populates="transactions"
