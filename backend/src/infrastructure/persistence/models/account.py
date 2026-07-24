@@ -58,7 +58,9 @@ class Account(UUIDMixin, TimestampMixin, SoftDeleteMixin, Base):
     # Relationships
     user: Mapped["User"] = relationship(back_populates="accounts")
     transactions: Mapped[list["Transaction"]] = relationship(
-        back_populates="account", cascade="all, delete-orphan"
+        foreign_keys="[Transaction.account_id]",
+        back_populates="account",
+        cascade="all, delete-orphan",
     )
     cards: Mapped[list["Card"]] = relationship(
         back_populates="account", cascade="all, delete-orphan"
